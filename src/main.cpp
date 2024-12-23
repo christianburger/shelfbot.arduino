@@ -1,11 +1,10 @@
 #include "shelfbot.h"
+#include "i2c_slave.h"
+
 #include <AccelStepper.h>
+#include <Wire.h>
 
-#include "ShelfbotLogger.h"
-
-shelfbot_logging::ShelfbotLogger logger;
-
-const uint8_t I2C_SLAVE_ADDRESS = 0x08; // Example address - needs to match slave device
+I2CSlave slave;
 
 uint8_t buffer[shelfbot::BUFFER_SIZE];
 
@@ -165,15 +164,26 @@ void testMotorSpeeds() {
   }
   Serial.println("\ntestMotorSpeeds ending...\n\n");
 }
+
+void requestEvent() {
+    Serial.println("Req");
+}
+
+void receiveEvent(int numBytes) {
+    Serial.print("\nreceived: ");
+    for (int i = 0; Wire.available() && i < numBytes; i++) {
+        char c = Wire.read();
+        Serial.print(c);
+    }
+    Serial.println("\t ... END");
+}
+
 void setup() {
   Serial.begin(115200);
-  //i2c.begin();
-  //i2c.scanBus();
-  //Serial.println("I2C: Device setup as master complete!");
 
   Serial.println("main: setup starting!");
-  Serial.println("main: Initializing ShelfbotLogger! TimeStamp: ");
-  logger.init();
+  Serial.println("main: initializing device as i2c slave");
+  slave.begin();
 
   setupMotors();
   printMotorSpeeds();
@@ -181,44 +191,39 @@ void setup() {
 }   
 
 void loop() {
+  unsigned long time = millis();
+  Serial.print("\n\nTIME: ");
+  Serial.println(time, DEC);
 
-    //getTimeStamp();
-
-    unsigned long time = millis();
-    Serial.print("\n\nTIME: ");
-    Serial.println(time, DEC);
-
-    //snprintf(timeStr, sizeof(timeStr), "%lu", time);
-  
-    logger.log("TMC2208: Forward movement - all motors");
-    stepAllMotors(2000);
+  Serial.println("TMC2208: Forward movement - all motors");
+  stepAllMotors(2000);
     
-    logger.log("TMC2208: Backward movement - all motors");
-    stepAllMotors(-2000);
+  Serial.println("TMC2208: Backward movement - all motors");
+  stepAllMotors(-2000);
     
-    logger.log("TMC2208: Full rotation forward - all motors");
-    stepAllMotors(stepsPerRevolution);
+  Serial.println("TMC2208: Full rotation forward - all motors");
+  stepAllMotors(stepsPerRevolution);
     
-    logger.log("TMC2208: Full rotation backward - all motors");
-    stepAllMotors(-stepsPerRevolution);
+  Serial.println("TMC2208: Full rotation backward - all motors");
+  stepAllMotors(-stepsPerRevolution);
 
-    logger.log("TMC2208: Forward movement - all motors");
-    moveAllMotors(2000);
+  Serial.println("TMC2208: Forward movement - all motors");
+  moveAllMotors(2000);
  
-    logger.log("TMC2208: Backward movement - all motors");
-    moveAllMotors(0);
+  Serial.println("TMC2208: Backward movement - all motors");
+  moveAllMotors(0);
     
-    logger.log("TMC2208: Full rotation forward - all motors");
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        steppers[i].moveTo(steppers[i].currentPosition() + stepsPerRevolution);
-    }
-    moveAllMotors(steppers[0].targetPosition());
+  Serial.println("TMC2208: Full rotation forward - all motors");
+  for (int i = 0; i < NUM_MOTORS; i++) {
+      steppers[i].moveTo(steppers[i].currentPosition() + stepsPerRevolution);
+  }
+  moveAllMotors(steppers[0].targetPosition());
     
-    logger.log("TMC2208: Full rotation backward - all motors");
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        steppers[i].moveTo(steppers[i].currentPosition() - stepsPerRevolution);
-    }
-    moveAllMotors(steppers[0].targetPosition());
+  Serial.println("TMC2208: Full rotation backward - all motors");
+  for (int i = 0; i < NUM_MOTORS; i++) {
+      steppers[i].moveTo(steppers[i].currentPosition() - stepsPerRevolution);
+  }
+  moveAllMotors(steppers[0].targetPosition());
 }
 
 namespace shelfbot {
