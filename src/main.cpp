@@ -1,10 +1,13 @@
+#define I2C_SLAVE_DEVICE
+
 #include "shelfbot.h"
 #include "i2c_slave.h"
+#include "i2c_master.h"
 
 #include <AccelStepper.h>
 #include <Wire.h>
 
-I2CSlave slave;
+I2CSlave i2c_slave;
 
 uint8_t buffer[shelfbot::BUFFER_SIZE];
 
@@ -183,7 +186,7 @@ void setup() {
 
   Serial.println("main: setup starting!");
   Serial.println("main: initializing device as i2c slave");
-  slave.begin();
+  i2c_slave.begin();
 
   setupMotors();
   printMotorSpeeds();

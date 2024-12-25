@@ -15,12 +15,18 @@ void ShelfbotComms::begin() {
 }
 
 void ShelfbotComms::sendCommand(CommandType cmd, uint16_t value) {
-    String formattedCmd = formatCommand(cmd, String(value));
-    
+    uint8_t buffer[4];
+    buffer[0] = (cmd >> 8) & 0xFF;    // High byte of command
+    buffer[1] = cmd & 0xFF;           // Low byte of command
+    buffer[2] = (value >> 8) & 0xFF;  // High byte of value
+    buffer[3] = value & 0xFF;         // Low byte of value
+
     #ifndef I2C_SLAVE_DEVICE
-    Serial.printf("\n\nSENT COMMAND: 0x%04X value: %d\n", cmd, value);
-    String response = I2CMaster::communicateWithSlave(I2C_SLAVE_ADDR, formattedCmd.c_str());
-    Serial.printf("\nRECEIVED RESPONSE: %s\n", response.c_str());
+    Serial.printf("Sending command: 0x%04X value: %d\n", cmd, value);
+    
+    Wire.beginTransmission(I2C_SLAVE_ADDR);
+    Wire.write(buffer, 4);
+    Wire.endTransmission();
     #endif
 }
 
