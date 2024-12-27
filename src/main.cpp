@@ -3,6 +3,7 @@
 #include "shelfbot.h"
 #include "i2c_slave.h"
 #include "i2c_master.h"
+#include "shelfbot_comms.h"
 
 #include <AccelStepper.h>
 #include <Wire.h>
@@ -52,6 +53,8 @@ void setupMotors() {
     }
 }
 
+
+/* 
 void moveAllMotors(long position) {
     // Set target position
     for (int i = 0; i < NUM_MOTORS; i++) {
@@ -72,7 +75,7 @@ void moveAllMotors(long position) {
     }
 }
 
-/* void setupMotors() {
+void setupMotors() {
   for (int i = 0; i < NUM_MOTORS; i++) {
       // Lower speeds for initial testing
       steppers[i].setMaxSpeed(4000);  // Start with 1000 steps/sec
@@ -160,9 +163,11 @@ void testMotorSpeeds() {
     }
         
     // Move all motors
-    moveAllMotors(1000);
+    ShelfbotComms::moveAllMotors(1000);
+
     delay(1000);
-    moveAllMotors(0);
+    ShelfbotComms::moveAllMotors(0);
+
     delay(1000);
   }
   Serial.println("\ntestMotorSpeeds ending...\n\n");
@@ -181,20 +186,9 @@ void receiveEvent(int numBytes) {
     Serial.println("\t ... END");
 }
 
-void setup() {
-  Serial.begin(115200);
-
-  Serial.println("main: setup starting!");
-  Serial.println("main: initializing device as i2c slave");
-  i2c_slave.begin();
-
-  setupMotors();
-  printMotorSpeeds();
-  testMotorSpeeds();
-}   
-
-void loop() {
+void testMotors() {
   unsigned long time = millis();
+
   Serial.print("\n\nTIME: ");
   Serial.println(time, DEC);
 
@@ -211,22 +205,41 @@ void loop() {
   stepAllMotors(-stepsPerRevolution);
 
   Serial.println("TMC2208: Forward movement - all motors");
-  moveAllMotors(2000);
+  ShelfbotComms::moveAllMotors(2000);
  
   Serial.println("TMC2208: Backward movement - all motors");
-  moveAllMotors(0);
+  ShelfbotComms::moveAllMotors(0);
     
   Serial.println("TMC2208: Full rotation forward - all motors");
   for (int i = 0; i < NUM_MOTORS; i++) {
       steppers[i].moveTo(steppers[i].currentPosition() + stepsPerRevolution);
   }
-  moveAllMotors(steppers[0].targetPosition());
+  ShelfbotComms::moveAllMotors(steppers[0].targetPosition());
     
   Serial.println("TMC2208: Full rotation backward - all motors");
   for (int i = 0; i < NUM_MOTORS; i++) {
       steppers[i].moveTo(steppers[i].currentPosition() - stepsPerRevolution);
   }
-  moveAllMotors(steppers[0].targetPosition());
+  ShelfbotComms::moveAllMotors(steppers[0].targetPosition());
+
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  Serial.println("main: setup starting!");
+  Serial.println("main: initializing device as i2c slave");
+  i2c_slave.begin();
+
+  setupMotors();
+  printMotorSpeeds();
+  testMotorSpeeds();
+  //testMotors();
+}   
+
+void loop() {
+  Serial.println("main: loop()!");
+  delay(2000);
 }
 
 namespace shelfbot {
