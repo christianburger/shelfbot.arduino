@@ -1,7 +1,7 @@
 #include "shelfbot_comms.h"
 
 #ifdef I2C_SLAVE_DEVICE
-extern AccelStepper steppers[];
+extern FastAccelStepper* steppers[];
 #endif
 
 void ShelfbotComms::begin() {
@@ -146,29 +146,14 @@ String ShelfbotComms::getStatus() {
     return String(millis());
 }
 
-#define NUM_MOTORS 6
 void ShelfbotComms::moveAllMotors(long position) {
     Serial.print("\nShelfbotComms::moveAllMotors(");
     Serial.print(position, DEC);
     Serial.print(") <<<<<");
 
-    // Set target position
-    for (int i = 0; i < NUM_MOTORS; i++) {
-        steppers[i].moveTo(position);
-        steppers[i].setSpeed(steppers[i].maxSpeed());
-    }
-    
-    // Run motors
-    while (true) {
-        bool allDone = true;
-        for (int i = 0; i < NUM_MOTORS; i++) {
-            if (steppers[i].distanceToGo() != 0) {
-                steppers[i].runSpeedToPosition();
-                allDone = false;
-            }
-        }
-        if (allDone) break;
-    }
+    #ifdef I2C_SLAVE_DEVICE
+    ShelfbotMotor::moveAllMotors(position);
+    #endif
 }
 
 String ShelfbotComms::setMotor(uint8_t index, const String& value) {
@@ -178,42 +163,43 @@ String ShelfbotComms::setMotor(uint8_t index, const String& value) {
     long position = value.toInt();
     Serial.println(position, DEC);
 
-    if(index >= 6) {
-        return formatResponse(RESP_ERR_MOTOR, String(index));
-    }
-
-    steppers[index].moveTo(position);
-    steppers[index].setSpeed(steppers[index].maxSpeed());
-
-    String status = String(steppers[index].currentPosition()) + "," +
-           String(steppers[index].targetPosition()) + "," +
-           String(steppers[index].distanceToGo()) + "," +
-           String(steppers[index].speed());
-    
-    return formatResponse(RESP_MOVING, status);
+    #ifdef I2C_SLAVE_DEVICE
+    return ShelfbotMotor::setMotor(index, position);
+    #else
+    return formatResponse(RESP_ERR_MOTOR, String(index));
+    #endif
 }
 
 String ShelfbotComms::getMotorPosition(uint8_t index) {
-    if(index >= 6) return "ERR_MOTOR";
-    return String(steppers[index].currentPosition());
+    #ifdef I2C_SLAVE_DEVICE
+    return ShelfbotMotor::getMotorPosition(index);
+    #else
+    return "ERR_MOTOR";
+    #endif
 }
 
 String ShelfbotComms::getMotorVelocity(uint8_t index) {
-    if(index >= 6) return "ERR_MOTOR";
-    return String(steppers[index].speed());
+    #ifdef I2C_SLAVE_DEVICE
+    return ShelfbotMotor::getMotorVelocity(index);
+    #else
+    return "ERR_MOTOR";
+    #endif
 }
 
 String ShelfbotComms::stopMotor(uint8_t index) {
-    if(index >= 6) return "ERR_MOTOR";
-    steppers[index].stop();
-    return String(steppers[index].currentPosition());
+    #ifdef I2C_SLAVE_DEVICE
+    return ShelfbotMotor::stopMotor(index);
+    #else
+    return "ERR_MOTOR";
+    #endif
 }
 
 String ShelfbotComms::stopAllMotors() {
-    for(int i = 0; i < 6; i++) {
-        steppers[i].stop();
-    }
+    #ifdef I2C_SLAVE_DEVICE
+    return ShelfbotMotor::stopAllMotors();
+    #else
     return "STOPPED";
+    #endif
 }
 
 String ShelfbotComms::getBatteryLevel() {
